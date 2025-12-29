@@ -1,0 +1,9 @@
+distribution,n,pattern,mergeCostTimsort,mergeCostPowersort,timeTimsortNs,timePowersortNs,stackHeightTimsort,stackHeightPowersort
+random,1000,random,9526,9017,547900,8788200,9,527
+random,1000,random,9251,8943,720400,15446400,9,503
+random,1000,random,9560,8938,579300,8725500,10,500
+random,5000,random,59867,56340,2927100,25083700,12,2515
+random,5000,random,58621,56301,2576400,22455300,11,2496
+random,5000,random,60554,56162,2391200,22499700,11,2447
+random,20000,random,276156,264990,6298500,89526500,13,9906
+rand
