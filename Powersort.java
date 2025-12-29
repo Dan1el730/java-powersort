@@ -45,36 +45,88 @@ public class Powersort {
         return j;
     }
 
-    // power: compute the "power" of the boundary between run1 and run2
-    // This follows the Python `power_fast` logic (uses integer/bit ops).
-    public static int power(Run run1, Run run2, int n) {
-        int i1 = run1.start;
-        int n1 = run1.len;
-        int i2 = run2.start;
-        int n2 = run2.len;
-        // a = 2 * i1 + n1  (2 * (i1 + n1/2))
-        int a = 2 * i1 + n1;
-        int b = a + n1 + n2; // 2 * (i2 + n2/2)
+    // ------------------------------------------------------------------
+    // power implementations
+    // ------------------------------------------------------------------
+    // Two versions are provided:
+    // 1) powerReference(): a clear, easy-to-read reference translation
+    //    of the Python `power` function (uses floating point / floor).
+    // 2) powerFast(): an optimized integer-only implementation following
+    //    the CPython derivation and the math in Section 2.3.2 of the
+    //    interim report (uses integer arithmetic and bit operations).
+    //
+    // The public `power()` method below calls the optimized version by
+    // default. Comments reference Equation 2.2 and Section 2.3.2.
+    // See the notebook `Timsort_Powersort.ipynb` for the original Python
+    // implementations `power` and `power_fast`.
+
+    /**
+     * Reference implementation matching the Python `power` function.
+     * This directly follows the definition using fractional midpoints
+     * and tests floor(a*2^l) == floor(b*2^l).
+     *
+     * This is simple and clear but uses floating-point arithmetic.
+     */
+    public static int powerReference(Run run1, Run run2, int n) {
+        double a = (run1.start + run1.len / 2.0) / (double) n; // (i1 + n1/2)/n
+        double b = (run2.start + run2.len / 2.0) / (double) n; // (i2 + n2/2)/n
+        int l = 0;
+        while (Math.floor(a * Math.pow(2, l)) == Math.floor(b * Math.pow(2, l))) {
+            l += 1;
+        }
+        return l;
+    }
+
+    /**
+     * Optimized integer implementation following the CPython `power_fast`
+     * approach and the math in Section 2.3.2 (Equation 2.2) of the
+     * interim report. This avoids floating point by working with scaled
+     * integer midpoints and repeated doubling (bit shifts).
+     *
+     * Notes:
+     * - We compute a' = 2*i1 + n1  (== 2*(i1 + n1/2)) and b' = a' + n1 + n2
+     *   which are integer numerators proportional to 2*(midpoints).
+     * - The loop mirrors the Python `power_fast` behavior: increment p
+     *   until b' falls into the next integer cell when scaled by 2^p.
+     * - Handles the a' >= n rotation case exactly as the Python code.
+     */
+    public static int powerFast(Run run1, Run run2, int n) {
+        long i1 = run1.start;
+        long n1 = run1.len;
+        long i2 = run2.start;
+        long n2 = run2.len;
+        long a = 2L * i1 + n1;           // 2 * (i1 + n1/2)
+        long b = a + n1 + n2;            // 2 * (i2 + n2/2)
         int l = 0;
         while (true) {
             l += 1;
             if (a >= n) {
                 // rotate a,b down by n as in Python implementation
-                // preserves fractional midpoint comparison modulo 1
-                if (!(b >= a)) throw new AssertionError("b < a after a>=n");
+                if (!(b >= a)) throw new AssertionError("Invariant violated: b < a when a>=n");
                 a -= n;
                 b -= n;
             } else if (b >= n) {
                 break;
             }
+            // At this point we expect 0 <= a < b < n
             if (!(a < b && b < n)) {
-                // safety check; break conservatively
+                // safety: break if something unexpected happens
                 break;
             }
-            a <<= 1;
+            a <<= 1; // multiply by 2
             b <<= 1;
+            // note: we intentionally use long arithmetic to avoid overflow
         }
         return l;
+    }
+
+    /**
+     * Public convenience method: by default uses the optimized integer
+     * implementation. If you want the reference implementation, call
+     * `powerReference` directly.
+     */
+    public static int power(Run run1, Run run2, int n) {
+        return powerFast(run1, run2, n);
     }
 
     // mergeTopmost2: merge the two topmost runs on the stack
