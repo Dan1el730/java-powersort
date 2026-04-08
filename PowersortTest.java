@@ -130,30 +130,30 @@ public class PowersortTest {
 
     // Compute powersort peak stack height without mutating array: replicate push/pop logic
     public static int computePowersortPeakStack(int[] a, boolean useFourWay, int minRunLength) {
-        int n = a.length; int i = 0; ArrayList<Powersort.Run> runs = new ArrayList<>();
+        int n = a.length; int i = 0; ArrayList<sort.Run> runs = new ArrayList<>();
         int peak = 0;
         while (i < n) {
-            int j = Powersort.extendRun(a, i);
+            int j = sort.extendRun(a, i);
             if (minRunLength > 1) j = Math.min(n, Math.max(j, i + minRunLength));
-            runs.add(new Powersort.Run(i, j - i, 0));
+            runs.add(new sort.Run(i, j - i, 0));
             if (runs.size() > peak) peak = runs.size();
             i = j;
             while (i <= n && runs.size() >= 2) {
-                Powersort.Run last = runs.get(runs.size()-1);
-                int p = Powersort.power(runs.get(runs.size()-2), last, n);
+                sort.Run last = runs.get(runs.size()-1);
+                int p = sort.power(runs.get(runs.size()-2), last, n);
                 if (p <= runs.get(runs.size()-2).getPower()) {
                     // merge topmost 2 (simulate)
-                    Powersort.Run Y = runs.get(runs.size()-2);
-                    Powersort.Run Z = runs.get(runs.size()-1);
-                    runs.set(runs.size()-2, new Powersort.Run(Y.getStart(), Y.getLength()+Z.getLength(), Y.getPower()));
+                    sort.Run Y = runs.get(runs.size()-2);
+                    sort.Run Z = runs.get(runs.size()-1);
+                    runs.set(runs.size()-2, new sort.Run(Y.getStart(), Y.getLength()+Z.getLength(), Y.getPower()));
                     runs.remove(runs.size()-1);
                 } else break;
             }
         }
         while (runs.size() >= 2) {
-            Powersort.Run Y = runs.get(runs.size()-2);
-            Powersort.Run Z = runs.get(runs.size()-1);
-            runs.set(runs.size()-2, new Powersort.Run(Y.getStart(), Y.getLength()+Z.getLength(), Y.getPower()));
+            sort.Run Y = runs.get(runs.size()-2);
+            sort.Run Z = runs.get(runs.size()-1);
+            runs.set(runs.size()-2, new sort.Run(Y.getStart(), Y.getLength()+Z.getLength(), Y.getPower()));
             runs.remove(runs.size()-1);
         }
         return peak;
@@ -168,7 +168,7 @@ public class PowersortTest {
         // Warmup
         TimsortEducational tsEdu = new TimsortEducational();
         tsEdu.sort(Arrays.copyOf(base, base.length));
-        Powersort.powersort(Arrays.copyOf(base, base.length));
+        sort.powersort(Arrays.copyOf(base, base.length), sort.Version.V0);
 
         // Timsort run
         tsEdu = new TimsortEducational();
@@ -181,12 +181,10 @@ public class PowersortTest {
         int peakT = tsEdu.peakStack;
 
         // Powersort run
-        Powersort.MERGE_COST = 0;
         long p0 = System.nanoTime();
-        Powersort.powersort(a2);
+        long mergeCostP = sort.powersort(a2, sort.Version.V0);
         long p1 = System.nanoTime();
         long timeP = p1 - p0;
-        long mergeCostP = Powersort.MERGE_COST;
         int peakP = computePowersortPeakStack(base, false, 1);
 
         return String.format("%s,%d,%s,%d,%d,%d,%d,%d,%d",
@@ -229,8 +227,7 @@ public class PowersortTest {
         int[] pattern2 = new int[4096]; // alternating long/short runs
         int[] runLens2 = new int[256];
         for (int i = 0; i < runLens2.length; i++) runLens2[i] = (i % 2 == 0) ? 1 : 15;
-        // runLens2 sums to 2048; use factor 2 so 2048*2 == 4096
-        fillWithAscRunsHighToLow(pattern2, runLens2, 2);
+        fillWithAscRunsHighToLow(pattern2, runLens2, 16);
         fw.append(runComparison("adversarial_alt", pattern2, "alt_1_15_scaled16")).append('\n');
 
         fw.flush(); fw.close();

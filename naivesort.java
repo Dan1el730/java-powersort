@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 /**
  * Powersort: Java translation (educational) of the Python implementation in
  * Timsort_Powersort.ipynb (see attachment).
@@ -12,7 +10,7 @@ import java.util.ArrayList;
  *
  * Comments in methods reference the original Python names from the notebook.
  */
-public class Powersort {
+public class naivesort {
 
     public static long MERGE_COST = 0;
     // Default gallop threshold
@@ -21,7 +19,9 @@ public class Powersort {
     private final boolean useGalloping;
     private final boolean useFourWay;
     private final int minRunLength;
-    private int[] tmpBuffer; // reused buffer for merges
+    private int[] tmpBuffer; // reused buffer for merges (pre-allocated for V2)
+    private Run[] runStack; // pre-allocated run stack for V2 (max 32 runs)
+    private int runCount; // current number of runs on stack
     private final int gallopThreshold;
 
     public static class Run {
@@ -143,26 +143,31 @@ public class Powersort {
         return powerFast(run1, run2, n);
     }
 
-    // Instance constructor with options
-    public Powersort(boolean useGalloping, boolean useFourWay, int minRunLength) {
-        this.useGalloping = useGalloping;
+    // Instance constructor with options (V3: disable galloping, pre-allocate buffers)
+    public naivesort(boolean useGalloping, boolean useFourWay, int minRunLength) {
+        this.useGalloping = false; // V3: Force off for performance testing (galloping adds complexity)
         this.useFourWay = useFourWay;
         this.minRunLength = Math.max(1, minRunLength);
-        this.tmpBuffer = new int[0];
+        // V2: Pre-allocate tmpBuffer (16KB for typical merge, grows with 1.5x if needed)
+        this.tmpBuffer = new int[16384];
+        // V2: Pre-allocate run stack (max ~32 runs for 2^32 elements)
+        this.runStack = new Run[32];
+        this.runCount = 0;
         this.gallopThreshold = DEFAULT_GALLOP;
     }
 
-    // mergeTopmost2: merge the two topmost runs on the stack (reuses tmpBuffer)
-    public void mergeTopmost2(int[] a, ArrayList<Run> runs) {
-        if (runs.size() < 2) throw new IllegalStateException("need >=2 runs to merge");
-        Run Y = runs.get(runs.size() - 2);
-        Run Z = runs.get(runs.size() - 1);
+    // mergeTopmost2: merge the two topmost runs on the stack (V2: uses pre-allocated runStack)
+    private void mergeTopmost2(int[] a) {
+        if (runCount < 2) throw new IllegalStateException("need >=2 runs to merge");
+        Run Y = runStack[runCount - 2];
+        Run Z = runStack[runCount - 1];
         if (Z.getStart() != Y.getStart() + Y.getLength()) throw new AssertionError("runs not adjacent");
         int i = Y.getStart();
         int m = Z.getStart();
         int j = Z.getStart() + Z.getLength();
         int outLen = (m - i) + (j - m);
-        if (tmpBuffer.length < outLen) tmpBuffer = new int[outLen];
+        // V2: Grow tmpBuffer with 1.5x factor if needed (not just exact fit)
+        if (tmpBuffer.length < outLen) tmpBuffer = new int[(int)(outLen * 1.5)];
         int[] tmp = tmpBuffer;
         int p = i, q = m, t = 0;
         int winA = 0, winB = 0;
@@ -192,16 +197,22 @@ public class Powersort {
                 }
             }
         }
-        while (p < m) tmp[t++] = a[p++];
-        while (q < j) tmp[t++] = a[q++];
+        // Optimize leftover copying: bulk copy the remaining larger segment
+        if (p < m) {
+            int remain = m - p;
+            System.arraycopy(a, p, tmp, t, remain);
+            t += remain;
+        } else {
+            int remain = j - q;
+            System.arraycopy(a, q, tmp, t, remain);
+            t += remain;
+        }
         // copy merged back into array
         System.arraycopy(tmp, 0, a, i, outLen);
         MERGE_COST += outLen;
-        // debug print like Python: Merge(i, m, j)
-        System.out.printf("Merge(%d, %d, %d)%n", i, m, j);
         // update runs: replace Y with merged run and pop Z
-        runs.set(runs.size() - 2, new Run(Y.getStart(), Y.getLength() + Z.getLength(), Y.getPower()));
-        runs.remove(runs.size() - 1);
+        runStack[runCount - 2] = new Run(Y.getStart(), Y.getLength() + Z.getLength(), Y.getPower());
+        runCount--;
     }
 
     // Simple exponential+binary search: find first index in [lo,hi) with a[idx] >= key
@@ -239,29 +250,32 @@ public class Powersort {
         return left;
     }
 
-    // 4-way merge of topmost 4 runs into one merged run
-    public void mergeTopmost4(int[] a, ArrayList<Run> runs) {
-        if (runs.size() < 4) throw new IllegalStateException("need >=4 runs to 4-way merge");
-        Run A = runs.get(runs.size() - 4);
-        Run B = runs.get(runs.size() - 3);
-        Run C = runs.get(runs.size() - 2);
-        Run D = runs.get(runs.size() - 1);
+    // 4-way merge of topmost 4 runs into one merged run (V2: uses pre-allocated runStack)
+    private void mergeTopmost4(int[] a) {
+        if (runCount < 4) throw new IllegalStateException("need >=4 runs to 4-way merge");
+        Run A = runStack[runCount - 4];
+        Run B = runStack[runCount - 3];
+        Run C = runStack[runCount - 2];
+        Run D = runStack[runCount - 1];
         int i = A.getStart();
         int m1 = B.getStart();
         int m2 = C.getStart();
         int m3 = D.getStart();
         int j = D.getStart() + D.getLength();
         int outLen = j - i;
-        if (tmpBuffer.length < outLen) tmpBuffer = new int[outLen];
+        // V2: Grow tmpBuffer with 1.5x factor if needed
+        if (tmpBuffer.length < outLen) tmpBuffer = new int[(int)(outLen * 1.5)];
         int[] tmp = tmpBuffer;
         int ia = i, ib = m1, ic = m2, id = m3, t = 0;
-        while ((ia < m1) || (ib < m2) || (ic < m3) || (id < j)) {
+        // Cache bounds in local variables to reduce repeated comparisons
+        int m1End = m1, m2End = m2, m3End = m3, jEnd = j;
+        while ((ia < m1End) || (ib < m2End) || (ic < m3End) || (id < jEnd)) {
             int minVal = Integer.MAX_VALUE;
             int which = -1;
-            if (ia < m1 && a[ia] < minVal) { minVal = a[ia]; which = 0; }
-            if (ib < m2 && a[ib] < minVal) { minVal = a[ib]; which = 1; }
-            if (ic < m3 && a[ic] < minVal) { minVal = a[ic]; which = 2; }
-            if (id < j  && a[id] < minVal) { minVal = a[id]; which = 3; }
+            if (ia < m1End && a[ia] < minVal) { minVal = a[ia]; which = 0; }
+            if (ib < m2End && a[ib] < minVal) { minVal = a[ib]; which = 1; }
+            if (ic < m3End && a[ic] < minVal) { minVal = a[ic]; which = 2; }
+            if (id < jEnd  && a[id] < minVal) { minVal = a[id]; which = 3; }
             if (which == 0) tmp[t++] = a[ia++];
             else if (which == 1) tmp[t++] = a[ib++];
             else if (which == 2) tmp[t++] = a[ic++];
@@ -270,42 +284,66 @@ public class Powersort {
         }
         System.arraycopy(tmp, 0, a, i, outLen);
         MERGE_COST += outLen;
-        System.out.printf("Merge4(%d, %d)%n", i, j);
         // replace A with merged run and pop B,C,D
-        runs.set(runs.size() - 4, new Run(A.getStart(), outLen, A.getPower()));
-        runs.remove(runs.size() - 1);
-        runs.remove(runs.size() - 1);
-        runs.remove(runs.size() - 1);
+        runStack[runCount - 4] = new Run(A.getStart(), outLen, A.getPower());
+        runCount -= 3;
     }
 
-    // instance sort with options: enforces minrun, reuses tmp buffer, optionally uses galloping and 4-way merge
+    // instance sort with options (V3: inline fast-path power computation)
     public void sort(int[] a) {
         int n = a.length;
         int i = 0;
-        ArrayList<Run> runs = new ArrayList<>();
+        runCount = 0; // Reset run stack counter
         int j = extendRun(a, i);
         j = enforceMinRun(a, i, j, n);
-        runs.add(new Run(i, j - i, 0));
+        if (runCount >= runStack.length) throw new RuntimeException("Run stack overflow");
+        runStack[runCount++] = new Run(i, j - i, 0);
         i = j;
         while (i < n) {
             j = extendRun(a, i);
             j = enforceMinRun(a, i, j, n);
             Run right = new Run(i, j - i);
-            int p = power(runs.get(runs.size() - 1), right, n);
-            while (p <= runs.get(runs.size() - 1).getPower()) {
-                if (useFourWay && runs.size() >= 4) mergeTopmost4(a, runs); else mergeTopmost2(a, runs);
+            Run left = runStack[runCount - 1];
+            int p;
+            // V3: Inline fast-path power computation for common case (small runs)
+            long leftLen = left.getLength();
+            long rightLen = right.getLength();
+            if (leftLen + rightLen < n / 2) {
+                // Fast inline path: most runs are small, compute power inline
+                long i1 = left.getStart();
+                long n1 = leftLen;
+                long i2 = right.getStart();
+                long n2 = rightLen;
+                long a_val = 2L * i1 + n1;
+                long b_val = a_val + n1 + n2;
+                p = 0;
+                while (true) {
+                    p++;
+                    if (a_val >= n) { a_val -= n; b_val -= n; }
+                    else if (b_val >= n) break;
+                    if (!(a_val < b_val && b_val < n)) break;
+                    a_val <<= 1; b_val <<= 1;
+                }
+            } else {
+                // Fallback to normal power computation for large runs
+                p = power(left, right, n);
             }
-            runs.add(new Run(i, j - i, p));
+            while (p <= left.getPower()) {
+                if (useFourWay && runCount >= 4) mergeTopmost4(a); else mergeTopmost2(a);
+                left = runStack[runCount - 1]; // Reload after merge
+            }
+            if (runCount >= runStack.length) throw new RuntimeException("Run stack overflow");
+            runStack[runCount++] = new Run(i, j - i, p);
             i = j;
         }
-        while (runs.size() >= 2) {
-            if (useFourWay && runs.size() >= 4) mergeTopmost4(a, runs); else mergeTopmost2(a, runs);
+        while (runCount >= 2) {
+            if (useFourWay && runCount >= 4) mergeTopmost4(a); else mergeTopmost2(a);
         }
     }
 
     // static convenience wrapper with default options (no galloping, no 4-way, minRun=1)
     public static void powersort(int[] a) {
-        new Powersort(false, false, 1).sort(a);
+        new naivesort(false, false, 1).sort(a);
     }
 
     // Ensure runs have at least minRunLength by extending with binary insertion sort
@@ -339,7 +377,7 @@ public class Powersort {
         for (int v : a) System.out.print(v + " ");
         System.out.println();
         // create an instance with galloping and 4-way enabled and minRunLength=32
-        Powersort sorter = new Powersort(true, true, 32);
+        naivesort sorter = new naivesort(true, true, 32);
         sorter.sort(a);
         System.out.println("After:");
         for (int v : a) System.out.print(v + " ");

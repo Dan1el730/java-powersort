@@ -1,0 +1,45 @@
+# Java build artifacts
+*.class
+*.jar
+*.war
+*.ear
+
+# Build/output directories
+out/
+build/
+target/
+
+# IDE metadata
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# LaTeX intermediate files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+
+# Generated report PDFs (keep source .tex in repo)
+FYP_22076383d_Final/main.pdf
+lec2-tuning.pdf
+lec3-design.pdf
+
+# Generated benchmark/test outputs
+results.csv
+benchmark_results*.csv
+benchmark_summary_*.csv
+pilot_results*.csv
