@@ -33,7 +33,10 @@ Thumbs.db
 *.synctex.gz
 *.toc
 
-# Generated report PDFs (keep source .tex in repo)
+# Final FYP report folder (keep off public repo)
+FYP_22076383d_Final/
+
+# Generated report PDFs
 FYP_22076383d_Final/main.pdf
 lec2-tuning.pdf
 lec3-design.pdf
