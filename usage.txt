@@ -1,0 +1,53 @@
+Java Powersort Usage
+====================
+
+1) Compile
+----------
+javac sort.java naivesort.java BenchmarkSuite.java PilotBenchmark.java PowersortTest.java profile.java
+
+2) Correctness / Differential Checks
+------------------------------------
+java PowersortTest
+
+Output:
+- results.csv
+
+3) Full Benchmark Campaign
+--------------------------
+java BenchmarkSuite
+
+Optional:
+- Quick run: java BenchmarkSuite --quick
+- Custom output: java BenchmarkSuite --out=benchmark_results.csv
+- Custom repetitions: java BenchmarkSuite --reps=30
+
+Output:
+- benchmark_results.csv
+
+4) Pilot Benchmark
+------------------
+java PilotBenchmark pilot_results.csv
+
+Output:
+- pilot_results.csv
+
+5) Profiling Overheads
+----------------------
+java profile <version|all> <array_size> <distribution> <repetitions>
+
+Examples:
+- java profile v0 100000 random 10
+- java profile v4 100000 few_unique 10
+- java profile all 100000 random 10
+
+Allowed versions:
+- v0, v1, v2, v3, v4, v5, all
+
+Allowed distributions:
+- random, sorted, reverse, few_unique, alternating, adversarial
+
+6) Notes
+--------
+- Use a stable power mode and low background load for timing runs.
+- Warmup effects are expected for JVM benchmarks.
+- Delete generated CSV files between campaigns if you want clean output sets.

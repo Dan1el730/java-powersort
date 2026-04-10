@@ -35,14 +35,28 @@ Thumbs.db
 
 # Final FYP report folder (keep off public repo)
 FYP_22076383d_Final/
+FYP_22076383d_Final__1_/
+FYP_22076383d_Interim/
 
 # Generated report PDFs
 FYP_22076383d_Final/main.pdf
 lec2-tuning.pdf
 lec3-design.pdf
+FYP_22076383d_Interim.pdf
+
+# Archives
+*.zip
 
 # Generated benchmark/test outputs
 results.csv
 benchmark_results*.csv
 benchmark_summary_*.csv
 pilot_results*.csv
+
+# Working notes and one-off scripts
+EXECUTION_PLAN.md
+OPTIMIZATION_OBSERVATIONS.md
+OPTIMIZATION_SUMMARY.md
+TUNING_ROADMAP.md
+experiment_matrix.csv
+test_optimizations.ps1

@@ -2,6 +2,11 @@
  * Powersort: Java translation (educational) of the Python implementation in
  * Timsort_Powersort.ipynb (see attachment).
  *
+ * Usage:
+ *   javac naivesort.java
+ *
+ * This file is kept as a reference/educational algorithm variant.
+ *
  * Implements:
  * - extendRun(): similar to Python's extend_run_increasing_only
  * - power(): computes the run-boundary power (uses bit operations like power_fast)

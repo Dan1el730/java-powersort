@@ -9,6 +9,10 @@ import java.util.Random;
  * Timsort implementation against the provided `Powersort` class.
  *
  * Outputs a CSV `results.csv` to the repository root.
+ *
+ * Usage:
+ *   javac sort.java PowersortTest.java
+ *   java PowersortTest
  */
 public class PowersortTest {
 

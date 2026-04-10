@@ -1,7 +1,7 @@
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -15,6 +15,12 @@ import java.util.Random;
  *
  * Output CSV columns:
  * algorithm,distribution,n,rep,time_ns,merge_cost,peak_stack
+ *
+ * Usage:
+ *   javac sort.java BenchmarkSuite.java
+ *   java BenchmarkSuite
+ *   java BenchmarkSuite --quick
+ *   java BenchmarkSuite --out=benchmark_results.csv --reps=30
  */
 public class BenchmarkSuite {
 

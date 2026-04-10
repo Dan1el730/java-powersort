@@ -1,3 +1,13 @@
+/**
+ * profile: overhead and runtime profiler for Powersort versions.
+ *
+ * Usage:
+ *   javac sort.java profile.java
+ *   java profile <version|all> <array_size> <distribution> <repetitions>
+ *
+ * Example:
+ *   java profile all 100000 random 10
+ */
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;

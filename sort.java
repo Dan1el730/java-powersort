@@ -1,3 +1,15 @@
+/**
+ * Primary Powersort implementation with tunable variants V0-V5.
+ *
+ * Usage (from repository root):
+ *   javac sort.java
+ *
+ * Called by experiment harnesses:
+ *   - BenchmarkSuite.java
+ *   - PilotBenchmark.java
+ *   - PowersortTest.java
+ *   - profile.java
+ */
 public class sort {
 
 	public enum Version {
